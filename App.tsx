@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { NavItemId } from './types';
 import { 
@@ -140,7 +140,13 @@ const TasksView: React.FC = () => {
   );
 };
 
-const SettingsView: React.FC = () => {
+type ScoreRange = { minPercent: number; maxPercent: number; score: number };
+type SettingsViewProps = {
+  scoreFromAchievedRanges: ScoreRange[];
+  setScoreFromAchievedRanges: React.Dispatch<React.SetStateAction<ScoreRange[]>>;
+};
+
+const SettingsView: React.FC<SettingsViewProps> = ({ scoreFromAchievedRanges, setScoreFromAchievedRanges }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'team' | 'billing' | 'goals_settings'>('goals_settings');
   const [softSkillsList, setSoftSkillsList] = useState([
     { id: 'ownership', label: 'Ownership', desc: 'Taking full accountability for deliverables' },
@@ -269,17 +275,19 @@ const SettingsView: React.FC = () => {
 
                   {/* Frequency & Constraints */}
                   <div className="p-6 rounded-[2rem] bg-white border border-slate-200 space-y-5 shadow-xl">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-                        <TargetIcon size={18} />
+                    <div className="flex items-center justify-between gap-4 flex-wrap">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                          <TargetIcon size={18} />
+                        </div>
+                        <p className="text-[13px] font-black text-slate-900 uppercase tracking-wider">Cycle Constraints</p>
                       </div>
-                      <p className="text-[13px] font-black text-slate-900 uppercase tracking-wider">Cycle Constraints</p>
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-400/20 shadow-sm">
+                        <CalendarRange size={14} className="text-blue-600" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-blue-700">Monthly</span>
+                      </div>
                     </div>
                     <div className="space-y-4">
-                      <div className="flex gap-2 p-1 bg-slate-100 rounded-[1.25rem] border border-slate-200">
-                        <button className="flex-1 py-2 text-[10px] font-black uppercase tracking-widest bg-blue-600 text-white rounded-xl shadow-lg">Monthly</button>
-                        <button className="flex-1 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-slate-900 transition-colors">Weekly</button>
-                      </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1.5">
                           <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest text-center block">Min Goals</label>
@@ -300,6 +308,59 @@ const SettingsView: React.FC = () => {
                       <p className="text-[9px] font-medium text-slate-500 leading-snug">Critical goals count toward the maximum. For example, if the maximum is 7 and 1 critical goal is required, you must include at least 1 critical goal, and your total goals must be between the minimum and 7.</p>
                     </div>
                   </div>
+                </div>
+
+                {/* Score from Achieved % – 5×5 style grid, user-friendly */}
+                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xl mt-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 border border-blue-500/20">
+                      <BarChart3 size={18} />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-black text-slate-900 uppercase tracking-wider">Score from Achieved %</p>
+                      <p className="text-[9px] font-medium text-slate-500 mt-0.5">Edit ranges below. Manager review uses these to auto-fill score (1–10).</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {scoreFromAchievedRanges.map((range, idx) => (
+                      <div key={idx} className="rounded-xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-3 shadow-sm hover:shadow-md hover:border-blue-200/50 transition-all duration-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Range {idx + 1}</span>
+                          <span className="w-6 h-6 rounded-lg bg-blue-500/15 text-blue-600 flex items-center justify-center text-[10px] font-black">{range.score}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            aria-label={`Range ${idx + 1} min %`}
+                            value={range.minPercent}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (!isNaN(v)) setScoreFromAchievedRanges(prev => prev.map((r, i) => i === idx ? { ...r, minPercent: Math.max(0, Math.min(100, v)) } : r));
+                            }}
+                            className="w-10 px-1.5 py-2 text-[11px] font-bold border border-slate-200 rounded-lg bg-white text-center focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span className="text-[10px] font-bold text-slate-400">–</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={100}
+                            aria-label={`Range ${idx + 1} max %`}
+                            value={range.maxPercent}
+                            onChange={(e) => {
+                              const v = parseInt(e.target.value, 10);
+                              if (!isNaN(v)) setScoreFromAchievedRanges(prev => prev.map((r, i) => i === idx ? { ...r, maxPercent: Math.max(0, Math.min(100, v)) } : r));
+                            }}
+                            className="w-10 px-1.5 py-2 text-[11px] font-bold border border-slate-200 rounded-lg bg-white text-center focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <span className="text-[10px] font-bold text-slate-500">%</span>
+                        </div>
+                        <p className="text-[8px] font-medium text-slate-400 mt-1.5">→ Score {range.score}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[9px] font-medium text-slate-500 mt-4 text-center">Score is auto-filled in manager review from the range that contains the entered Achieved %.</p>
                 </div>
               </div>
 
@@ -603,6 +664,38 @@ const App: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState('2026');
   const [goalType, setGoalType] = useState<'weekly' | 'monthly'>('monthly');
   const [managerGoalNotes, setManagerGoalNotes] = useState<Record<string, string>>({});
+  const [managerGoalScores, setManagerGoalScores] = useState<Record<string, string>>({});
+  const [managerGoalAchieved, setManagerGoalAchieved] = useState<Record<string, string>>({});
+
+  // Score-from-Achieved % ranges (editable from Goals Settings): 0–10%→1, 11–20%→2, …, 91–100%→10
+  const [scoreFromAchievedRanges, setScoreFromAchievedRanges] = useState<{ minPercent: number; maxPercent: number; score: number }[]>([
+    { minPercent: 0, maxPercent: 10, score: 1 },
+    { minPercent: 11, maxPercent: 20, score: 2 },
+    { minPercent: 21, maxPercent: 30, score: 3 },
+    { minPercent: 31, maxPercent: 40, score: 4 },
+    { minPercent: 41, maxPercent: 50, score: 5 },
+    { minPercent: 51, maxPercent: 60, score: 6 },
+    { minPercent: 61, maxPercent: 70, score: 7 },
+    { minPercent: 71, maxPercent: 80, score: 8 },
+    { minPercent: 81, maxPercent: 90, score: 9 },
+    { minPercent: 91, maxPercent: 100, score: 10 },
+  ]);
+  const getScoreFromAchieved = (achievedPercent: number): number => {
+    if (achievedPercent == null || isNaN(achievedPercent)) return 0;
+    const p = Math.max(0, Math.min(100, achievedPercent));
+    const band = scoreFromAchievedRanges.find(r => p >= r.minPercent && p <= r.maxPercent);
+    return band ? band.score : 0;
+  };
+
+  // Operational Goals (Goals detail view) - inline add/edit
+  type OperationalGoal = { id: number; name: string; critical?: boolean; metric: string; achieved: number; weight: number; status: string; addedByManager?: boolean; managerNotes?: string; italic?: boolean };
+  const [operationalGoals, setOperationalGoals] = useState<OperationalGoal[]>([
+    { id: 1, name: "This is a demo goal added", critical: true, metric: "= 100%", achieved: 0, weight: 20, status: "PENDING", managerNotes: "Focus on quality over speed this sprint." },
+    { id: 2, name: "Q1 Revenue Targets", critical: false, metric: "= 100%", achieved: 100, weight: 40, status: "COMPLETED", italic: true },
+    { id: 3, name: "Strategic Lead Outreach", critical: false, metric: "5 priority leads", achieved: 5, weight: 40, status: "PENDING", addedByManager: true, managerNotes: "Prioritise enterprise leads." }
+  ]);
+  const [editingGoalId, setEditingGoalId] = useState<number | null>(null);
+  const [inlineNewGoal, setInlineNewGoal] = useState<Partial<OperationalGoal> | null>(null);
 
   // Achievement Form State
   const [achievementForm, setAchievementForm] = useState({
@@ -633,17 +726,37 @@ const App: React.FC = () => {
     { id: 3, question: "Did you completed your critical goal?", employee: 'no', manager: null },
   ]);
 
-  // Mock Team Data for Manager View
+  // Mock Team Data for Manager View (includes extra members for leaderboard rank demo)
   const teamMembers: TeamMember[] = [
-    { id: 1, name: "Sarah Jenkins", role: "Product Designer", avatarColor: "bg-purple-600", status: "Rising Star", goals: "3/3", streak: "5 Months", score: "9.2", reviewPending: true, hasBadge: true },
+    { id: 1, name: "Sarah Jenkins", role: "Product Designer", avatarColor: "bg-purple-600", status: "Growing Employee", goals: "3/3", streak: "5 Months", score: "9.2", reviewPending: true, hasBadge: true },
     { id: 2, name: "David Miller", role: "Frontend Dev", avatarColor: "bg-emerald-600", status: "Shooting Star", goals: "2/3", streak: "3 Months", score: "8.5", reviewPending: true },
-    { id: 3, name: "Emma Wilson", role: "UX Researcher", avatarColor: "bg-amber-600", status: "Rising Star", goals: "3/3", streak: "12 Months", score: "9.8", reviewPending: false, hasBadge: true },
-    { id: 4, name: "James Bond", role: "Security Engineer", avatarColor: "bg-indigo-600", status: "Beginner", goals: "1/3", streak: "1 Month", score: "7.0", reviewPending: true },
+    { id: 3, name: "Emma Wilson", role: "UX Researcher", avatarColor: "bg-amber-600", status: "Growing Employee", goals: "3/3", streak: "12 Months", score: "9.8", reviewPending: false, hasBadge: true },
+    { id: 4, name: "James Bond", role: "Security Engineer", avatarColor: "bg-indigo-600", status: "Intermediate", goals: "1/3", streak: "1 Month", score: "7.0", reviewPending: true },
+    { id: 5, name: "Alex Chen", role: "Backend Dev", avatarColor: "bg-cyan-600", status: "Intermediate", goals: "2/3", streak: "2 Months", score: "6.8", reviewPending: false },
+    { id: 6, name: "Jordan Lee", role: "Data Analyst", avatarColor: "bg-rose-600", status: "Intermediate", goals: "1/3", streak: "1 Month", score: "6.5", reviewPending: true },
+    { id: 7, name: "Sam Taylor", role: "QA Engineer", avatarColor: "bg-violet-600", status: "Intermediate", goals: "2/3", streak: "2 Months", score: "6.2", reviewPending: false },
+    { id: 8, name: "Riley Moore", role: "DevOps", avatarColor: "bg-teal-600", status: "Intermediate", goals: "1/3", streak: "1 Month", score: "6.0", reviewPending: true },
+    { id: 9, name: "Casey Brown", role: "Designer", avatarColor: "bg-orange-500", status: "Intermediate", goals: "2/3", streak: "1 Month", score: "5.8", reviewPending: false },
+    { id: 10, name: "Morgan Davis", role: "Support Lead", avatarColor: "bg-pink-600", status: "Intermediate", goals: "1/3", streak: "1 Month", score: "5.5", reviewPending: true },
+    { id: 11, name: "Quinn White", role: "Content Writer", avatarColor: "bg-lime-600", status: "Intermediate", goals: "1/3", streak: "1 Month", score: "5.2", reviewPending: false },
+    { id: 12, name: "Pat Kim", role: "Marketing", avatarColor: "bg-slate-600", status: "Intermediate", goals: "1/3", streak: "1 Month", score: "5.0", reviewPending: true },
   ];
+
+  // Active login user (in real app from auth); used for leaderboard "Your score" and "Your rank"
+  const activeLoginUserId = 12;
+  const sortedByScore = [...teamMembers].sort((a, b) => parseFloat(b.score) - parseFloat(a.score));
+  const activeLoginUser = teamMembers.find(m => m.id === activeLoginUserId);
+  const activeLoginUserRank = sortedByScore.findIndex(m => m.id === activeLoginUserId) + 1;
 
   const handleReviewChange = (id: number, type: 'employee' | 'manager', value: 'yes' | 'no') => {
     setReviewSummary(prev => prev.map(item => 
       item.id === id ? { ...item, [type]: value } : item
+    ));
+  };
+
+  const handleSoftSkillRating = (skillId: number, type: 'employee' | 'manager', value: number) => {
+    setSoftSkillsData(prev => prev.map(s =>
+      s.id === skillId ? { ...s, [type === 'employee' ? 'employeeRating' : 'managerRating']: value } : s
     ));
   };
 
@@ -667,9 +780,9 @@ const App: React.FC = () => {
     title: "Add Your Goals For",
     subtitle: "February",
     badge: isEmployee ? "Active Cycle • February 2026" : "Active Cycle - February 2026",
-    rankLabel: "Rising Star",
-    progressLabel: "Rising Star Goal",
-    progressStart: "Beginner",
+    rankLabel: "Growing Employee",
+    progressLabel: "Growing Employee Goal",
+    progressStart: "Intermediate",
     progressValue: "2 / 3",
     progressWidth: "66%",
     currentStreak: "2 Months"
@@ -689,6 +802,20 @@ const App: React.FC = () => {
     { name: 'November', status: 'upcoming' },
     { name: 'December', status: 'upcoming' },
   ];
+  const activeCycleMonth = months.find(m => m.status === 'active')?.name ?? null;
+  const isGoalsCycleEditable = selectedMonth === activeCycleMonth;
+
+  const completedMonthsWithScore = months.filter((m: { status?: string; score?: string }) => m.status === 'completed' && m.score);
+  const employeeAvgScore = completedMonthsWithScore.length
+    ? (completedMonthsWithScore.reduce((s: number, m: { score?: string }) => s + parseFloat(m.score || '0'), 0) / completedMonthsWithScore.length).toFixed(1)
+    : null;
+
+  useEffect(() => {
+    if (!isGoalsCycleEditable) {
+      setEditingGoalId(null);
+      setInlineNewGoal(null);
+    }
+  }, [isGoalsCycleEditable]);
 
   const handleMonthClick = (name: string) => {
     if (name === 'February' || name === 'January') {
@@ -714,11 +841,11 @@ const App: React.FC = () => {
   // Calculate overall team average score
   const teamAvgScore = (teamMembers.reduce((acc, m) => acc + parseFloat(m.score), 0) / teamMembers.length).toFixed(1);
 
-  // Mock Goal Data for January (Approved)
+  // Mock Goal Data for January (Approved) – past month with data already added
   const januaryGoals = [
-    { id: 1, name: "Design System 2.0 Foundation", critical: true, metric: "100% core components updated", weight: "40%", score: "9/10", status: "Approved" },
-    { id: 2, name: "Quarterly User Research Synthesis", critical: false, metric: "3 high-impact findings", weight: "40%", score: "8/10", status: "Approved" },
-    { id: 3, name: "Market Benchmarking Study", critical: false, metric: "Audit 5 competitors", weight: "20%", score: "10/10", status: "Approved", addedByManager: true },
+    { id: 1, name: "Design System 2.0 Foundation", critical: true, metric: "100% core components updated", weight: "40%", progress: "90%", score: "9/10", status: "Approved", managerNotes: "Strong delivery on core components. Minor docs pending." },
+    { id: 2, name: "Quarterly User Research Synthesis", critical: false, metric: "3 high-impact findings", weight: "40%", progress: "80%", score: "8/10", status: "Approved", managerNotes: "Good synthesis. Recommend deeper follow-up in Q2." },
+    { id: 3, name: "Market Benchmarking Study", critical: false, metric: "Audit 5 competitors", weight: "20%", progress: "100%", score: "10/10", status: "Approved", addedByManager: true, managerNotes: "Exceeded scope. Well presented to leadership." },
   ];
 
   // Mock Goal Data for February (Active)
@@ -728,7 +855,15 @@ const App: React.FC = () => {
     { id: 3, name: "Strategic Lead Outreach", critical: false, metric: "5 priority leads", progress: "15%", weight: "15%", status: "In Progress", addedByManager: true },
   ];
 
-  const currentMonthGoals = memberReportMonth === 'January' ? januaryGoals : februaryGoals;
+  type ManagerReportGoal = { id: number; name: string; critical?: boolean; metric: string; weight: string; score?: string; status: string; addedByManager?: boolean; progress?: string };
+  const [managerJanuaryGoals, setManagerJanuaryGoals] = useState<ManagerReportGoal[]>(() => [...januaryGoals]);
+  const [managerFebruaryGoals, setManagerFebruaryGoals] = useState<ManagerReportGoal[]>(() => [...februaryGoals]);
+  const [memberReportInlineNewGoal, setMemberReportInlineNewGoal] = useState<Partial<ManagerReportGoal> | null>(null);
+  const [memberReportEditingGoalId, setMemberReportEditingGoalId] = useState<number | null>(null);
+  const [memberReportEditDraft, setMemberReportEditDraft] = useState<Partial<ManagerReportGoal>>({});
+
+  const currentMonthGoals = memberReportMonth === 'January' ? managerJanuaryGoals : managerFebruaryGoals;
+  const setCurrentMonthGoals = memberReportMonth === 'January' ? setManagerJanuaryGoals : setManagerFebruaryGoals;
 
   const getDates = () => {
     const now = new Date();
@@ -760,7 +895,7 @@ const App: React.FC = () => {
       <main className="flex-1 flex flex-col overflow-y-auto bg-[#f8fafc]">
         {/* Render Views based on Active Item */}
         {activeItemId === 'settings' ? (
-          <SettingsView />
+          <SettingsView scoreFromAchievedRanges={scoreFromAchievedRanges} setScoreFromAchievedRanges={setScoreFromAchievedRanges} />
         ) : activeItemId === 'my_tasks' ? (
           <TasksView />
         ) : (
@@ -787,12 +922,7 @@ const App: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-4">
-                <div className="relative cursor-pointer group">
-                  <Bell size={18} className="text-slate-400 group-hover:text-slate-600 transition-colors" />
-                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] font-bold flex items-center justify-center rounded-full border-2 border-white">1</span>
-                </div>
-
-                <div className="flex items-center gap-2 cursor-pointer group pl-4 border-l border-slate-200">
+                <div className="flex items-center gap-2 cursor-pointer group">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm transition-colors duration-500 ${isEmployee ? 'bg-emerald-700' : 'bg-indigo-700'}`}>
                     {isEmployee ? 'P' : 'M'}
                   </div>
@@ -991,110 +1121,287 @@ const App: React.FC = () => {
                             </span>
                         </div>
                         {memberReportMonth === 'February' && (
-                          <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-blue-500/20">
+                          <button
+                            onClick={() => { setMemberReportEditingGoalId(null); setMemberReportEditDraft({}); setMemberReportInlineNewGoal({ name: '', critical: false, metric: '', weight: '20%', status: 'In Progress', addedByManager: true }); }}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-blue-500/20"
+                          >
                             <Plus size={14} strokeWidth={3} />
                             Add New
                           </button>
                         )}
                       </div>
 
-                      {/* Operational Goals Grid (Card Style) */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {currentMonthGoals.map((goal: any, idx) => (
-                          <div key={goal.id} className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden text-left">
-                              <div className="flex justify-between items-start mb-6">
-                                <span className="text-[11px] font-black text-slate-200">#0{idx + 1}</span>
-                                <div className="flex items-center gap-1.5">
-                                    {goal.critical && <span className="px-2 py-0.5 bg-red-500 text-white text-[7px] font-black uppercase rounded-lg tracking-widest">Critical</span>}
-                                    {goal.addedByManager && <span className="px-2 py-0.5 bg-blue-50 text-blue-500 border border-blue-100 text-[7px] font-black uppercase rounded-lg tracking-widest">Manager</span>}
-                                </div>
-                              </div>
-                              <h3 className="text-sm font-black text-slate-900 mb-2 leading-tight">{goal.name}</h3>
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">{goal.metric}</p>
-                              
-                              <div className="grid grid-cols-2 gap-3 mb-6">
-                                <div className="bg-slate-50 p-3 rounded-2xl">
-                                    <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">WEIGHTAGE</span>
-                                    <span className="text-xs font-black text-slate-900">{goal.weight}</span>
-                                </div>
-                                <div className="bg-slate-50 p-3 rounded-2xl">
-                                    <span className="block text-[8px] font-black text-slate-300 uppercase tracking-widest mb-0.5">SCORE</span>
-                                    <span className="text-xs font-black text-blue-600">{goal.score || '---'}</span>
-                                </div>
-                              </div>
-
-                              {selectedMember && (
-                                <div className="mb-4">
-                                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Manager notes (optional)</label>
-                                  <textarea
-                                    placeholder="Add notes for the employee..."
-                                    value={managerGoalNotes[`${selectedMember.id}-${memberReportMonth}-${goal.id}`] ?? ''}
-                                    onChange={(e) => setManagerGoalNotes(prev => ({ ...prev, [`${selectedMember.id}-${memberReportMonth}-${goal.id}`]: e.target.value }))}
-                                    rows={2}
-                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-[11px] font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 resize-none"
-                                  />
-                                </div>
+                      {/* Operational Goals – Listing (Table) */}
+                      <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+                        <div className="px-6 pb-4 overflow-x-auto">
+                          <table className="w-full text-left">
+                            <thead>
+                              <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">
+                                <th className="py-4 px-2">SR NO</th>
+                                <th className="py-4 px-2">GOAL</th>
+                                <th className="py-4 px-2">METRIC</th>
+                                <th className="py-4 px-2">WEIGHTAGE</th>
+                                <th className="py-4 px-2">ACHIEVED</th>
+                                <th className="py-4 px-2">SCORE</th>
+                                <th className="py-4 px-2">STATUS</th>
+                                <th className="py-4 px-2">MANAGER NOTES</th>
+                                {memberReportMonth !== 'January' && <th className="py-4 px-2 text-center">ACTION</th>}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {memberReportMonth === 'February' && memberReportInlineNewGoal !== null && (
+                                <tr className="border-b border-slate-50 bg-blue-50/30">
+                                  <td className="py-3 px-2 text-slate-400 text-xs">—</td>
+                                  <td className="py-3 px-2">
+                                    <div className="flex flex-col gap-1">
+                                      <input
+                                        type="text"
+                                        placeholder="Goal name"
+                                        value={memberReportInlineNewGoal.name ?? ''}
+                                        onChange={(e) => setMemberReportInlineNewGoal(g => ({ ...g, name: e.target.value }))}
+                                        className="w-full max-w-[200px] px-2 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30"
+                                      />
+                                      <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                                        <input type="checkbox" checked={memberReportInlineNewGoal.critical ?? false} onChange={(e) => setMemberReportInlineNewGoal(g => ({ ...g, critical: e.target.checked }))} />
+                                        Critical
+                                      </label>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Metric"
+                                      value={memberReportInlineNewGoal.metric ?? ''}
+                                      onChange={(e) => setMemberReportInlineNewGoal(g => ({ ...g, metric: e.target.value }))}
+                                      className="w-full max-w-[140px] px-2 py-1.5 text-[11px] border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30"
+                                    />
+                                  </td>
+                                  <td className="py-3 px-2">
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. 20%"
+                                      value={memberReportInlineNewGoal.weight ?? '20%'}
+                                      onChange={(e) => setMemberReportInlineNewGoal(g => ({ ...g, weight: e.target.value }))}
+                                      className="w-14 px-2 py-1.5 text-[10px] border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30"
+                                    />
+                                  </td>
+                                  <td className="py-3 px-2 text-[11px] text-slate-400">—</td>
+                                  <td className="py-3 px-2 text-[11px] text-slate-400">—</td>
+                                  <td className="py-3 px-2">
+                                    <span className="px-2 py-0.5 text-[8px] font-black uppercase rounded-full bg-slate-200 text-slate-600">New</span>
+                                  </td>
+                                  <td className="py-3 px-2">—</td>
+                                  <td className="py-3 px-2">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        onClick={() => {
+                                          if (memberReportInlineNewGoal.name?.trim()) {
+                                            const id = Math.max(0, ...currentMonthGoals.map((g: ManagerReportGoal) => g.id)) + 1;
+                                            setCurrentMonthGoals(prev => [...prev, {
+                                              id,
+                                              name: memberReportInlineNewGoal.name!.trim(),
+                                              critical: memberReportInlineNewGoal.critical ?? false,
+                                              metric: memberReportInlineNewGoal.metric || '—',
+                                              weight: memberReportInlineNewGoal.weight ?? '20%',
+                                              status: 'In Progress',
+                                              addedByManager: true
+                                            }]);
+                                            setMemberReportInlineNewGoal(null);
+                                          }
+                                        }}
+                                        className="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-bold hover:bg-emerald-600"
+                                      >
+                                        Save
+                                      </button>
+                                      <button onClick={() => setMemberReportInlineNewGoal(null)} className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[9px] font-bold hover:bg-slate-300">Cancel</button>
+                                    </div>
+                                  </td>
+                                </tr>
                               )}
-
-                              <div className="flex items-center gap-2">
-                                <button className="flex-1 py-3 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2">
-                                  <Check size={12} strokeWidth={4} /> APPROVE
-                                </button>
-                                <button className="flex-1 py-3 bg-red-50 text-red-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2">
-                                  <X size={12} strokeWidth={4} /> REJECT
-                                </button>
-                              </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Additional Achievements Section */}
-                      <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm mt-8">
-                        <div className="bg-[#fafbff] p-8 border-b border-slate-100 flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Medal size={20} className="text-amber-500" />
-                            <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-wider leading-none">ADDITIONAL ACHIEVEMENTS</h2>
-                            <Sparkles size={14} className="text-amber-400 animate-pulse" />
-                          </div>
-                          <button 
-                            onClick={() => setIsAchievementModalOpen(true)}
-                            className="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-blue-600 transition-colors shadow-lg shadow-slate-900/10"
-                          >
-                            <Plus size={14} strokeWidth={3} />
-                            Add Achievement
-                          </button>
-                        </div>
-
-                        <div className="p-8">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {additionalAchievements.filter(a => a.memberId === selectedMember.id).map((achievement) => (
-                              <div key={achievement.id} className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative group overflow-hidden text-left">
-                                <div className="absolute top-0 right-0 w-24 h-24 bg-amber-100 rounded-full -mr-12 -mt-12 opacity-20 group-hover:scale-150 transition-transform duration-500" />
-                                
-                                <div className="flex justify-between items-start mb-4 relative z-10">
-                                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 shadow-sm border border-amber-200">
-                                    <Medal size={20} />
-                                  </div>
-                                  <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">{achievement.date}</span>
-                                </div>
-
-                                <h3 className="text-sm font-black text-slate-900 mb-2 relative z-10">{achievement.title}</h3>
-                                <p className="text-xs font-bold text-slate-400 leading-relaxed mb-6 line-clamp-2 relative z-10">{achievement.description}</p>
-                                
-                                <div className="flex items-center gap-2 pt-4 border-t border-slate-200 relative z-10">
-                                  <button className="text-[9px] font-black text-blue-500 uppercase tracking-widest hover:text-blue-700">Edit</button>
-                                  <span className="text-slate-200">•</span>
-                                  <button className="text-[9px] font-black text-red-400 uppercase tracking-widest hover:text-red-600">Delete</button>
-                                </div>
-                              </div>
-                            ))}
-                            {additionalAchievements.filter(a => a.memberId === selectedMember.id).length === 0 && (
-                              <div className="col-span-full py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 rounded-[2.5rem]">
-                                <Award size={48} className="text-slate-100 mb-4" />
-                                <p className="text-sm font-black text-slate-300 uppercase tracking-widest">No achievements added yet</p>
-                              </div>
-                            )}
-                          </div>
+                              {currentMonthGoals.map((goal: any, idx: number) => (
+                                memberReportMonth === 'February' && memberReportEditingGoalId === goal.id ? (
+                                <tr key={goal.id} className="border-b border-slate-50 bg-blue-50/30">
+                                  <td className="py-3 px-2 text-slate-900 font-black text-xs">{idx + 1}</td>
+                                  <td className="py-3 px-2">
+                                    <div className="flex flex-col gap-1">
+                                      <input
+                                        type="text"
+                                        placeholder="Goal name"
+                                        value={memberReportEditDraft.name ?? goal.name}
+                                        onChange={(e) => setMemberReportEditDraft(d => ({ ...d, name: e.target.value }))}
+                                        className="w-full max-w-[200px] px-2 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30"
+                                      />
+                                      <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600">
+                                        <input type="checkbox" checked={memberReportEditDraft.critical ?? goal.critical ?? false} onChange={(e) => setMemberReportEditDraft(d => ({ ...d, critical: e.target.checked }))} />
+                                        Critical
+                                      </label>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-2">
+                                    <input
+                                      type="text"
+                                      placeholder="Metric"
+                                      value={memberReportEditDraft.metric ?? goal.metric}
+                                      onChange={(e) => setMemberReportEditDraft(d => ({ ...d, metric: e.target.value }))}
+                                      className="w-full max-w-[140px] px-2 py-1.5 text-[11px] border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30"
+                                    />
+                                  </td>
+                                  <td className="py-3 px-2">
+                                    <input
+                                      type="text"
+                                      placeholder="e.g. 20%"
+                                      value={memberReportEditDraft.weight ?? goal.weight}
+                                      onChange={(e) => setMemberReportEditDraft(d => ({ ...d, weight: e.target.value }))}
+                                      className="w-14 px-2 py-1.5 text-[10px] border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30"
+                                    />
+                                  </td>
+                                  <td className="py-3 px-2 text-[11px] text-slate-400">{goal.progress ?? '—'}</td>
+                                  <td className="py-3 px-2 text-[11px] text-slate-400">{goal.score ?? '—'}</td>
+                                  <td className="py-3 px-2">
+                                    <span className="px-2 py-0.5 text-[8px] font-black uppercase rounded-full bg-slate-200 text-slate-600">Edit</span>
+                                  </td>
+                                  <td className="py-3 px-2">—</td>
+                                  <td className="py-3 px-2">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button
+                                        onClick={() => {
+                                          setCurrentMonthGoals(prev => prev.map(g => g.id === goal.id ? {
+                                            ...g,
+                                            name: (memberReportEditDraft.name ?? goal.name).trim() || goal.name,
+                                            critical: memberReportEditDraft.critical ?? goal.critical ?? false,
+                                            metric: memberReportEditDraft.metric ?? goal.metric,
+                                            weight: memberReportEditDraft.weight ?? goal.weight
+                                          } : g));
+                                          setMemberReportEditingGoalId(null);
+                                          setMemberReportEditDraft({});
+                                        }}
+                                        className="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-bold hover:bg-emerald-600"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => { setMemberReportEditingGoalId(null); setMemberReportEditDraft({}); }}
+                                        className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[9px] font-bold hover:bg-slate-300"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                                ) : (
+                                <tr key={goal.id} className="group border-b border-slate-50 last:border-none hover:bg-slate-50/50 transition-colors">
+                                  <td className="py-4 px-2 text-slate-900 font-black text-xs">{idx + 1}</td>
+                                  <td className="py-4 px-2">
+                                    <div className="flex flex-col gap-0.5 max-w-[200px] min-w-0">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span title={goal.name} className="text-xs font-black text-slate-800 truncate block min-w-0">{goal.name}</span>
+                                        {goal.critical && <span className="flex-shrink-0 px-2 py-0.5 bg-[#f54343] text-white text-[7px] font-black uppercase rounded-lg tracking-widest">CRITICAL</span>}
+                                        {goal.addedByManager && <span className="flex-shrink-0 px-2 py-0.5 bg-blue-50 text-blue-500 border border-blue-100 text-[7px] font-black uppercase rounded-lg tracking-widest">MANAGER</span>}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-4 px-2 text-[11px] font-bold text-slate-500 tracking-tight">{goal.metric}</td>
+                                  <td className="py-4 px-2 text-[11px] font-black text-slate-800">{goal.weight}</td>
+                                  <td className="py-4 px-2">
+                                    {memberReportMonth === 'January' ? (() => {
+                                      const key = `${selectedMember?.id}-${memberReportMonth}-${goal.id}`;
+                                      const progressSrc = managerGoalAchieved[key] ?? goal.progress ?? januaryGoals.find((g: any) => g.id === goal.id)?.progress;
+                                      let achievedVal = progressSrc ? String(progressSrc).replace(/%$/, '').trim() : '';
+                                      if (!achievedVal && goal.score && String(goal.score).includes('/')) {
+                                        const num = parseFloat(String(goal.score).split('/')[0]);
+                                        if (!isNaN(num)) achievedVal = String(Math.round(num * 10));
+                                      }
+                                      return (
+                                        <span className="text-[11px] font-black text-slate-800">{achievedVal ? `${achievedVal}%` : '—'}</span>
+                                      );
+                                    })() : selectedMember ? (
+                                      <span className="inline-flex items-center gap-0.5">
+                                        <input
+                                          type="number"
+                                          min={0}
+                                          max={100}
+                                          placeholder="%"
+                                          value={managerGoalAchieved[`${selectedMember.id}-${memberReportMonth}-${goal.id}`] ?? (goal.progress ? String(goal.progress).replace(/%$/, '') : '')}
+                                          onChange={(e) => {
+                                            const v = e.target.value;
+                                            if (v === '' || (parseFloat(v) >= 0 && parseFloat(v) <= 100)) {
+                                              setManagerGoalAchieved(prev => ({ ...prev, [`${selectedMember.id}-${memberReportMonth}-${goal.id}`]: v }));
+                                            }
+                                          }}
+                                          className="w-12 px-2 py-1.5 text-[11px] font-black text-slate-800 border border-slate-200 rounded-lg bg-white text-center focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        />
+                                        <span className="text-[9px] font-bold text-slate-400">%</span>
+                                      </span>
+                                    ) : (
+                                      <span className="text-[11px] font-black text-slate-800">{goal.progress ?? '—'}</span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 px-2">
+                                    {memberReportMonth === 'January' ? (
+                                      <span className="text-[11px] font-black text-blue-600">{goal.score || (goal.progress ? `${getScoreFromAchieved(parseFloat(String(goal.progress).replace(/%$/, '')))}/10` : '—')}</span>
+                                    ) : selectedMember ? (() => {
+                                      const key = `${selectedMember.id}-${memberReportMonth}-${goal.id}`;
+                                      const achievedStr = managerGoalAchieved[key] ?? (goal.progress ? String(goal.progress).replace(/%$/, '').trim() : '');
+                                      const achievedNum = achievedStr === '' ? NaN : parseFloat(achievedStr);
+                                      const autoScore = getScoreFromAchieved(achievedNum);
+                                      return (
+                                        <span className="inline-flex items-center gap-0.5">
+                                          {achievedStr === '' || isNaN(achievedNum) ? (
+                                            <span className="text-[11px] font-black text-slate-400">—</span>
+                                          ) : (
+                                            <>
+                                              <span className="text-[11px] font-black text-blue-600">{autoScore}</span>
+                                              <span className="text-[9px] font-bold text-slate-400">/10</span>
+                                            </>
+                                          )}
+                                        </span>
+                                      );
+                                    })() : (
+                                      <span className="text-[11px] font-black text-blue-600">{goal.score || '---'}</span>
+                                    )}
+                                  </td>
+                                  <td className="py-4 px-2">
+                                    <span className={`px-3 py-1 text-[8px] font-black uppercase rounded-2xl border ${
+                                      goal.status === 'Approved' || goal.status === 'COMPLETED' ? 'bg-[#f0fdf4] text-[#10b981] border-[#d1fae5]' : goal.status === 'In Progress' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-[#fff1f1] text-[#f54343] border-[#fee2e2]'
+                                    }`}>
+                                      {goal.status}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 px-2">
+                                    {memberReportMonth === 'January' ? (
+                                      <span className="text-[11px] font-medium text-slate-700 block max-w-[200px]">
+                                        {managerGoalNotes[`${selectedMember?.id}-${memberReportMonth}-${goal.id}`] || (goal as any).managerNotes || januaryGoals.find((g: any) => g.id === goal.id)?.managerNotes || '—'}
+                                      </span>
+                                    ) : selectedMember && (
+                                      <textarea
+                                        placeholder="Add notes..."
+                                        value={managerGoalNotes[`${selectedMember.id}-${memberReportMonth}-${goal.id}`] ?? ''}
+                                        onChange={(e) => setManagerGoalNotes(prev => ({ ...prev, [`${selectedMember.id}-${memberReportMonth}-${goal.id}`]: e.target.value }))}
+                                        rows={2}
+                                        className="w-full min-w-[140px] max-w-[200px] bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 resize-none"
+                                      />
+                                    )}
+                                  </td>
+                                  {memberReportMonth !== 'January' && (
+                                    <td className="py-4 px-2">
+                                      <div className="flex items-center justify-center gap-1.5">
+                                        <button
+                                          title="Edit goal"
+                                          onClick={() => { setMemberReportInlineNewGoal(null); setMemberReportEditingGoalId(goal.id); setMemberReportEditDraft({ name: goal.name, critical: goal.critical, metric: goal.metric, weight: goal.weight }); }}
+                                          className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-blue-500 transition-all hover:bg-blue-50"
+                                        >
+                                          <Edit3 size={14} />
+                                        </button>
+                                        <button title="Approve" className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-emerald-500 transition-all hover:bg-emerald-50"><Check size={14} /></button>
+                                        <button title="Reject" className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-red-500 transition-all hover:bg-red-50"><X size={14} /></button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                                )
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
 
@@ -1193,7 +1500,8 @@ const App: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-6">
-                                   <div>
+                                   {/* Employee Rating: read-only in manager view */}
+                                   <div className="opacity-60 pointer-events-none">
                                       <div className="flex justify-between items-center mb-2">
                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Employee Rating</span>
                                          <span className={`text-[10px] font-black ${skill.employeeRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.employeeRating}/10</span>
@@ -1212,23 +1520,20 @@ const App: React.FC = () => {
                                       </div>
                                    </div>
 
+                                   {/* Manager Rating: editable in manager view */}
                                    <div>
                                       <div className="flex justify-between items-center mb-2">
                                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Manager Rating</span>
                                          <span className={`text-[10px] font-black ${skill.managerRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.managerRating}/10</span>
                                       </div>
-                                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
-                                         <div 
-                                            className={`h-full transition-all duration-700 ${skill.managerRating === 0 ? 'bg-slate-200' : skill.managerRating <= 3 ? 'bg-emerald-500' : 'bg-emerald-500'}`}
-                                            style={{ width: `${skill.managerRating * 10}%` }}
-                                         />
-                                         {skill.managerRating > 0 && (
-                                            <div 
-                                               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white border-2 border-slate-200 rounded-full shadow-sm"
-                                               style={{ left: `calc(${skill.managerRating * 10}% - 5px)` }}
-                                            />
-                                         )}
-                                      </div>
+                                      <input
+                                        type="range"
+                                        min={0}
+                                        max={10}
+                                        value={skill.managerRating}
+                                        onChange={(e) => handleSoftSkillRating(skill.id, 'manager', parseInt(e.target.value, 10))}
+                                        className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-emerald-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-200 [&::-webkit-slider-thumb]:shadow-sm"
+                                      />
                                    </div>
                                 </div>
                               </div>
@@ -1565,10 +1870,7 @@ const App: React.FC = () => {
                         <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 uppercase tracking-widest">Top 5 by score</span>
                       </div>
                       <div className="space-y-3">
-                        {[...teamMembers]
-                          .sort((a, b) => parseFloat(b.score) - parseFloat(a.score))
-                          .slice(0, 5)
-                          .map((m, idx) => {
+                        {sortedByScore.slice(0, 5).map((m, idx) => {
                             const rank = idx + 1;
                             const badge = rank === 1 ? <Crown size={12} className="text-amber-500" /> : rank === 2 ? <Star size={12} className="text-slate-400" /> : rank === 3 ? <Medal size={12} className="text-amber-600" /> : null;
                             return (
@@ -1594,6 +1896,41 @@ const App: React.FC = () => {
                               </div>
                             );
                           })}
+                        {activeLoginUser && activeLoginUserRank > 5 && (
+                          <>
+                            <div className="flex justify-center py-1">
+                              <span className="text-slate-300 text-lg leading-none">⋯</span>
+                            </div>
+                            <div className="flex items-center justify-between py-2 px-3 rounded-xl bg-violet-50 border border-violet-100 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className="relative">
+                                  <div className={`w-9 h-9 rounded-xl ${activeLoginUser.avatarColor} flex items-center justify-center text-white text-[11px] font-black shadow-sm`}>
+                                    Y
+                                  </div>
+                                  <div className="absolute -top-1.5 -left-1.5 w-5 h-5 bg-white border border-violet-200 rounded-full flex items-center justify-center text-[10px] font-black text-violet-600 shadow-sm">
+                                    {activeLoginUserRank}
+                                  </div>
+                                </div>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-sm font-semibold text-slate-800">You</span>
+                                    <span className="text-[9px] font-medium text-slate-500">you</span>
+                                  </div>
+                                  <span className="text-[10px] text-slate-500">{activeLoginUser.role}</span>
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-sm font-black text-blue-600">{activeLoginUser.score}</span>
+                                <span className="text-[9px] font-semibold text-violet-600">Your rank is {activeLoginUserRank}</span>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                        {activeLoginUser && activeLoginUserRank <= 5 && (
+                          <div className="mt-2 pt-2 border-t border-slate-100">
+                            <span className="text-[10px] font-semibold text-slate-500">Your current rank is <span className="text-blue-600 font-black">{activeLoginUserRank}</span></span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -1769,7 +2106,7 @@ const App: React.FC = () => {
                                       </div>
                                       <div className="flex flex-col">
                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">STATUS</span>
-                                        <span className="text-sm font-black text-blue-600 leading-none">RISING STAR</span>
+                                        <span className="text-sm font-black text-blue-600 leading-none">{bannerConfig.rankLabel.toUpperCase()}</span>
                                       </div>
                                     </div>
                                     <div className="bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg">
@@ -1781,8 +2118,8 @@ const App: React.FC = () => {
                                       <div className="h-full bg-blue-600 rounded-full" style={{ width: bannerConfig.progressWidth }} />
                                     </div>
                                     <div className="flex justify-between">
-                                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">BEGINNER</span>
-                                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RISING STAR GOAL</span>
+                                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{bannerConfig.progressStart.toUpperCase()}</span>
+                                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{bannerConfig.progressLabel.toUpperCase()}</span>
                                     </div>
                                  </div>
                               </div>
@@ -1793,7 +2130,7 @@ const App: React.FC = () => {
                                  </div>
                                  <div className="flex flex-col">
                                     <h3 className="text-xs font-black text-slate-900 leading-none mb-1">Badge Unlocked!</h3>
-                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RISING STAR LEVEL</p>
+                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">GROWING EMPLOYEE LEVEL</p>
                                  </div>
                                  <button type="button" onClick={() => setIsBadgeInfoModalOpen(true)} className="ml-auto w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer" aria-label="Badge info">
                                    <Info size={14} />
@@ -1816,6 +2153,17 @@ const App: React.FC = () => {
                           </div>
 
                           <div className="w-full lg:w-72 flex flex-col gap-3 items-center justify-center pl-0 lg:pl-10 mt-6 lg:mt-0">
+                            <div className="w-full bg-white rounded-[1rem] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] p-4 flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/10 shrink-0">
+                                <BarChart3 size={20} />
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <h3 className="text-xs font-black text-slate-900 leading-none mb-1">Avg Score</h3>
+                                <span className="text-sm font-black text-emerald-600" title="Average of completed months (Jan–Dec)">
+                                  {employeeAvgScore != null ? `${employeeAvgScore}/10` : '—'}
+                                </span>
+                              </div>
+                            </div>
                             <button 
                               onClick={() => { const activeMonth = months.find(m => m.status === 'active'); if (activeMonth) { setSelectedMonth(activeMonth.name); setIsDetailView(true); } }}
                               className="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white py-5 px-6 rounded-2xl font-black text-xs uppercase tracking-[0.15em] flex items-center justify-center gap-3 shadow-[0_10px_40px_rgba(15,23,42,0.15)] active:scale-95 transition-all group"
@@ -1953,10 +2301,27 @@ const App: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col gap-2">
                         <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-none">Goals - {selectedMonth} {selectedYear}</h1>
-                        <div className="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 self-start">
-                          <Timer size={10} className="animate-pulse" />
-                          <span className="text-[9px] font-black uppercase tracking-widest">Add Your Goals By 30 Mar 2026</span>
-                        </div>
+                        {isGoalsCycleEditable ? (
+                          <div className="flex items-center gap-1 text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100 self-start">
+                            <Timer size={10} className="animate-pulse" />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Add Your Goals By 30 Mar 2026</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 self-start px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 shadow-sm">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-600 border border-blue-200/50">
+                              <Star size={18} fill="currentColor" />
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Your score for {selectedMonth} {selectedYear}</span>
+                              <span className="text-xl font-black text-blue-600 leading-none">
+                                {operationalGoals.length
+                                  ? (operationalGoals.reduce((sum, g) => sum + getScoreFromAchieved(g.achieved), 0) / operationalGoals.length).toFixed(1)
+                                  : '—'}
+                                <span className="text-xs font-bold text-slate-400 ml-1">/ 10</span>
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <button 
                         onClick={() => { setIsDetailView(false); setSelectedMonth(null); }}
@@ -1976,7 +2341,7 @@ const App: React.FC = () => {
                             <div className="flex flex-col text-left">
                                 <div className="flex items-center gap-2">
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">RANK</span>
-                                    <span className="text-base font-black text-blue-600 uppercase tracking-tight">RISING STAR</span>
+                                    <span className="text-base font-black text-blue-600 uppercase tracking-tight">{bannerConfig.rankLabel.toUpperCase()}</span>
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ACHIEVED: 2</span>
                             </div>
@@ -1996,7 +2361,7 @@ const App: React.FC = () => {
                         <div className="flex items-center gap-2">
                           <div className="flex flex-col items-end">
                             <h3 className="text-xs font-black text-slate-900 leading-none mb-1">Badge Unlocked!</h3>
-                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">RISING STAR LEVEL</p>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">GROWING EMPLOYEE LEVEL</p>
                           </div>
                           <div className="w-10 h-10 bg-[#fca311] rounded-xl flex items-center justify-center text-white shadow-lg">
                             <Star size={20} fill="white" />
@@ -2016,15 +2381,14 @@ const App: React.FC = () => {
                             <Info size={9} className="text-slate-300" />
                           </div>
                         </div>
-                        {selectedMonth === 'February' && (
-                          <button 
-                            onClick={() => setIsModalOpen(true)} 
-                            className="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
-                          >
-                            <Plus size={14} strokeWidth={3} />
-                            Add Goal
-                          </button>
-                        )}
+                        <button 
+                          onClick={() => isGoalsCycleEditable && setInlineNewGoal({ name: '', metric: '= 100%', achieved: 0, weight: 20, status: 'PENDING', critical: false })} 
+                          disabled={!isGoalsCycleEditable}
+                          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all ${isGoalsCycleEditable ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-95' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                        >
+                          <Plus size={14} strokeWidth={3} />
+                          Add Goal
+                        </button>
                       </div>
 
                       <div className="px-6 pb-6 overflow-x-auto">
@@ -2032,60 +2396,117 @@ const App: React.FC = () => {
                           <thead>
                             <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50">
                               <th className="py-4 px-2">SR NO</th>
-                              <th className="py-4 px-2">GOAL NAME</th>
+                              <th className="py-4 px-2">GOAL</th>
                               <th className="py-4 px-2">METRIC</th>
                               <th className="py-4 px-2">ACHIEVED</th>
                               <th className="py-4 px-2">WEIGHTAGE</th>
+                              <th className="py-4 px-2">SCORE</th>
                               <th className="py-4 px-2">STATUS</th>
-                              <th className="py-4 px-2 text-center">ACTION</th>
+                              {isGoalsCycleEditable && <th className="py-4 px-2 text-center">ACTION</th>}
                             </tr>
                           </thead>
                           <tbody>
-                            {[
-                              { id: 1, name: "This is a demo goal added", critical: true, metric: "= 100%", achieved: 0, weight: 20, status: "PENDING", managerNotes: "Focus on quality over speed this sprint." },
-                              { id: 2, name: "Q1 Revenue Targets", critical: false, metric: "= 100%", achieved: 100, weight: 40, status: "COMPLETED", italic: true },
-                              { id: 3, name: "Strategic Lead Outreach", critical: false, metric: "5 priority leads", achieved: 5, weight: 40, status: "PENDING", addedByManager: true, managerNotes: "Prioritise enterprise leads." }
-                            ].map((goal, idx) => (
+                            {/* Inline add row - only for active cycle */}
+                            {isGoalsCycleEditable && inlineNewGoal !== null && (
+                              <tr className="border-b border-slate-50 bg-blue-50/30">
+                                <td className="py-2 px-2 text-slate-400 text-xs">—</td>
+                                <td className="py-2 px-2">
+                                  <div className="flex flex-col gap-1">
+                                    <input type="text" placeholder="Goal name" value={inlineNewGoal.name ?? ''} onChange={(e) => setInlineNewGoal(g => ({ ...g, name: e.target.value }))} className="w-full max-w-[220px] px-2 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400" />
+                                    <label className="flex items-center gap-2 text-[10px] font-bold text-slate-600"><input type="checkbox" checked={inlineNewGoal.critical ?? false} onChange={(e) => setInlineNewGoal(g => ({ ...g, critical: e.target.checked }))} /> Critical</label>
+                                  </div>
+                                </td>
+                                <td className="py-2 px-2"><input type="text" placeholder="Metric" value={inlineNewGoal.metric ?? ''} onChange={(e) => setInlineNewGoal(g => ({ ...g, metric: e.target.value }))} className="w-full max-w-[120px] px-2 py-1.5 text-[11px] border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30" /></td>
+                                <td className="py-2 px-2"><div className="w-14 h-8 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-300 cursor-not-allowed select-none">—</div></td>
+                                <td className="py-2 px-2"><input type="number" min={0} max={100} value={inlineNewGoal.weight ?? 20} onChange={(e) => setInlineNewGoal(g => ({ ...g, weight: parseInt(e.target.value, 10) || 0 }))} className="w-14 px-2 py-1.5 text-[10px] border border-slate-200 rounded-lg bg-white text-center focus:ring-2 focus:ring-blue-500/30" /></td>
+                                <td className="py-2 px-2"><span className="px-2 py-0.5 text-[8px] font-black uppercase rounded-full bg-slate-200 text-slate-600">—</span></td>
+                                <td className="py-2 px-2"><span className="px-2 py-0.5 text-[8px] font-black uppercase rounded-full bg-slate-200 text-slate-600">New</span></td>
+                                <td className="py-2 px-2">
+                                  <div className="flex items-center gap-1">
+                                    <button onClick={() => { if (inlineNewGoal.name?.trim()) { const id = Math.max(0, ...operationalGoals.map(g => g.id)) + 1; setOperationalGoals(prev => [...prev, { id, name: inlineNewGoal.name!.trim(), critical: inlineNewGoal.critical ?? false, metric: inlineNewGoal.metric ?? '= 100%', achieved: inlineNewGoal.achieved ?? 0, weight: inlineNewGoal.weight ?? 20, status: 'PENDING' }]); setInlineNewGoal(null); } }} className="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-bold hover:bg-emerald-600">Save</button>
+                                    <button onClick={() => setInlineNewGoal(null)} className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[9px] font-bold hover:bg-slate-300">Cancel</button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            {operationalGoals.map((goal, idx) => (
+                              isGoalsCycleEditable && editingGoalId === goal.id ? (
+                                <tr key={goal.id} className="border-b border-slate-50 bg-blue-50/20">
+                                  <td className="py-2 px-2 text-slate-900 font-black text-xs">{idx + 1}</td>
+                                  <td className="py-2 px-2">
+                                    <input type="text" value={goal.name} onChange={(e) => setOperationalGoals(prev => prev.map(g => g.id === goal.id ? { ...g, name: e.target.value } : g))} className="w-full max-w-[220px] px-2 py-1.5 text-xs font-semibold border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30" />
+                                  </td>
+                                  <td className="py-2 px-2"><input type="text" value={goal.metric} onChange={(e) => setOperationalGoals(prev => prev.map(g => g.id === goal.id ? { ...g, metric: e.target.value } : g))} className="w-full max-w-[120px] px-2 py-1.5 text-[11px] border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500/30" /></td>
+                                  <td className="py-2 px-2"><div className="w-14 h-8 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-300 cursor-not-allowed select-none">—</div></td>
+                                  <td className="py-2 px-2"><input type="number" min={0} max={100} value={goal.weight} onChange={(e) => setOperationalGoals(prev => prev.map(g => g.id === goal.id ? { ...g, weight: parseInt(e.target.value, 10) || 0 } : g))} className="w-14 px-2 py-1.5 text-[10px] border border-slate-200 rounded-lg bg-white text-center focus:ring-2 focus:ring-blue-500/30" /></td>
+                                  <td className="py-2 px-2"><span className="inline-flex items-center justify-center w-12 h-8 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-300 cursor-not-allowed select-none">—</span></td>
+                                  <td className="py-2 px-2"><span className={`px-2 py-0.5 text-[8px] font-black uppercase rounded-full ${goal.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : goal.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>{goal.status}</span></td>
+                                  <td className="py-2 px-2">
+                                    <div className="flex items-center gap-1">
+                                      <button onClick={() => setEditingGoalId(null)} className="px-2 py-1 rounded-lg bg-emerald-500 text-white text-[9px] font-bold hover:bg-emerald-600">Save</button>
+                                      <button onClick={() => setEditingGoalId(null)} className="px-2 py-1 rounded-lg bg-slate-200 text-slate-600 text-[9px] font-bold hover:bg-slate-300">Cancel</button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ) : (
                               <tr key={goal.id} className="group border-b border-slate-50 last:border-none hover:bg-slate-50/50 transition-colors">
                                 <td className="py-4 px-2 text-slate-900 font-black text-xs">{idx + 1}</td>
                                 <td className="py-4 px-2">
-                                  <div className="flex flex-col gap-0.5">
-                                    <div className="flex items-center gap-2">
-                                      <span className={`text-xs font-black text-slate-800 ${goal.italic ? 'italic font-medium text-slate-400' : ''}`}>{goal.name}</span>
+                                  <div className="flex flex-col gap-0.5 max-w-[220px] min-w-0">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span title={goal.name} className={`text-xs font-black text-slate-800 truncate block min-w-0 ${goal.italic ? 'italic font-medium text-slate-400' : ''}`}>{goal.name}</span>
                                       {goal.critical && (
-                                        <span className="px-2 py-0.5 bg-[#f54343] text-white text-[7px] font-black uppercase rounded-lg tracking-widest">CRITICAL</span>
+                                        <span className="flex-shrink-0 px-2 py-0.5 bg-[#f54343] text-white text-[7px] font-black uppercase rounded-lg tracking-widest">CRITICAL</span>
                                       )}
                                     </div>
                                     {goal.addedByManager && (
                                       <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest italic leading-none">Added by Manager</span>
                                     )}
-                                    {'managerNotes' in goal && goal.managerNotes && (
-                                      <span className="text-[9px] font-medium text-slate-500 leading-snug mt-0.5">Manager notes: {goal.managerNotes}</span>
+                                    {goal.managerNotes && (
+                                      <span className="text-[9px] font-medium text-slate-500 leading-snug mt-0.5 truncate block min-w-0" title={goal.managerNotes}>Manager notes: {goal.managerNotes}</span>
                                     )}
                                   </div>
                                 </td>
                                 <td className="py-4 px-2 text-[11px] font-bold text-slate-300 tracking-tight">{goal.metric}</td>
                                 <td className="py-4 px-2">
-                                  <div className="w-16 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center gap-0.5 text-[10px] font-black text-slate-300">
-                                    {goal.achieved} <span className="text-[8px] font-medium">%</span>
-                                  </div>
+                                  {isGoalsCycleEditable ? (
+                                    <div className="w-16 h-8 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center text-[10px] font-bold text-slate-300 cursor-not-allowed select-none">
+                                      —
+                                    </div>
+                                  ) : (
+                                    <div className="w-16 h-8 bg-white border border-slate-100 rounded-lg flex items-center justify-center gap-0.5 text-[10px] font-black text-slate-300">
+                                      {goal.achieved} <span className="text-[8px] font-medium">%</span>
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="py-4 px-2 text-[11px] font-black text-slate-800">{goal.weight}</td>
                                 <td className="py-4 px-2">
-                                  <span className={`px-3 py-1 text-[8px] font-black uppercase rounded-2xl border ${
-                                    goal.status === 'COMPLETED' ? 'bg-[#f0fdf4] text-[#10b981] border-[#d1fae5]' : 'bg-[#fff1f1] text-[#f54343] border-[#fee2e2]'
-                                  }`}>
-                                    {goal.status}
-                                  </span>
+                                  {isGoalsCycleEditable ? (
+                                    <span className="inline-flex items-center justify-center w-14 h-8 bg-slate-50 border border-slate-100 rounded-lg text-[10px] font-bold text-slate-300 cursor-not-allowed select-none">—</span>
+                                  ) : (
+                                    <span className="text-[11px] font-black text-blue-600">{getScoreFromAchieved(goal.achieved)}<span className="text-[9px] font-bold text-slate-400 ml-0.5">/10</span></span>
+                                  )}
                                 </td>
                                 <td className="py-4 px-2">
-                                  <div className="flex items-center justify-center gap-1.5">
-                                    <button title="Approve" className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-emerald-500 transition-all hover:bg-emerald-50"><Check size={14} /></button>
-                                    <button title="Reject" className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-red-500 transition-all hover:bg-red-50"><X size={14} /></button>
-                                    <button title="Edit" className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-blue-500 transition-all hover:bg-blue-50"><Edit3 size={14} /></button>
-                                  </div>
+                                  <span className={`px-3 py-1 text-[8px] font-black uppercase rounded-2xl border ${
+                                    isGoalsCycleEditable
+                                      ? (goal.status === 'COMPLETED' ? 'bg-[#f0fdf4] text-[#10b981] border-[#d1fae5]' : goal.status === 'REJECTED' ? 'bg-slate-100 text-slate-600 border-slate-200' : 'bg-[#fff1f1] text-[#f54343] border-[#fee2e2]')
+                                      : (goal.status === 'COMPLETED' ? 'bg-[#f0fdf4] text-[#10b981] border-[#d1fae5]' : 'bg-slate-100 text-slate-600 border-slate-200')
+                                  }`}>
+                                    {isGoalsCycleEditable ? goal.status : (goal.status === 'COMPLETED' ? 'Completed' : 'Not Completed')}
+                                  </span>
                                 </td>
+                                {isGoalsCycleEditable && (
+                                  <td className="py-4 px-2">
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button title="Approve" onClick={() => setOperationalGoals(prev => prev.map(g => g.id === goal.id ? { ...g, status: 'COMPLETED' } : g))} className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-emerald-500 hover:bg-emerald-50 transition-all"><Check size={14} /></button>
+                                      <button title="Reject" onClick={() => setOperationalGoals(prev => prev.map(g => g.id === goal.id ? { ...g, status: 'REJECTED' } : g))} className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all"><X size={14} /></button>
+                                      <button title="Edit" onClick={() => setEditingGoalId(goal.id)} className="w-8 h-8 rounded-lg border border-slate-50 flex items-center justify-center text-slate-300 hover:text-blue-500 hover:bg-blue-50 transition-all"><Edit3 size={14} /></button>
+                                    </div>
+                                  </td>
+                                )}
                               </tr>
+                            )
                             ))}
                           </tbody>
                         </table>
@@ -2114,26 +2535,24 @@ const App: React.FC = () => {
                               </div>
 
                               <div className="space-y-6">
+                                 {/* Employee Rating: editable in employee view */}
                                  <div>
                                     <div className="flex justify-between items-center mb-2">
                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Employee Rating</span>
                                        <span className={`text-[10px] font-black ${skill.employeeRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.employeeRating}/10</span>
                                     </div>
-                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
-                                       <div 
-                                          className={`h-full transition-all duration-700 ${skill.id === 1 ? 'bg-red-500' : 'bg-blue-600'}`}
-                                          style={{ width: `${skill.employeeRating * 10}%` }}
-                                       />
-                                       {skill.employeeRating > 0 && (
-                                          <div 
-                                             className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white border-2 border-slate-200 rounded-full shadow-sm"
-                                             style={{ left: `calc(${skill.employeeRating * 10}% - 5px)` }}
-                                          />
-                                       )}
-                                    </div>
+                                    <input
+                                      type="range"
+                                      min={0}
+                                      max={10}
+                                      value={skill.employeeRating}
+                                      onChange={(e) => handleSoftSkillRating(skill.id, 'employee', parseInt(e.target.value, 10))}
+                                      className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-200 [&::-webkit-slider-thumb]:shadow-sm"
+                                    />
                                  </div>
 
-                                 <div>
+                                 {/* Manager Rating: read-only in employee view */}
+                                 <div className="opacity-60 pointer-events-none">
                                     <div className="flex justify-between items-center mb-2">
                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Manager Rating</span>
                                        <span className={`text-[10px] font-black ${skill.managerRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.managerRating}/10</span>
@@ -2255,33 +2674,6 @@ const App: React.FC = () => {
                           </table>
                         </div>
                       )}
-                    </div>
-
-                    {/* Additional Achievements */}
-                    <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm mt-8">
-                      <div className="bg-[#fafbff] p-6 border-b border-slate-100 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Award size={18} className="text-amber-500" />
-                          <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-wider leading-none">Additional Achievements</h2>
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        {additionalAchievements.filter(a => a.memberId === 1).length > 0 ? (
-                          <ul className="space-y-4">
-                            {additionalAchievements.filter(a => a.memberId === 1).map((achievement) => (
-                              <li key={achievement.id} className="flex flex-col gap-1 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                <div className="flex items-center justify-between flex-wrap gap-2">
-                                  <span className="text-sm font-bold text-slate-800">{achievement.title}</span>
-                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{achievement.date}</span>
-                                </div>
-                                <p className="text-xs text-slate-600 leading-relaxed">{achievement.description}</p>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className="text-sm text-slate-400 text-center py-8">No additional achievements added yet.</p>
-                        )}
-                      </div>
                     </div>
                   </div>
                 )}
@@ -2415,7 +2807,7 @@ const App: React.FC = () => {
                   <Star size={24} className="text-[#fca311]" fill="currentColor" />
                 </div>
                 <div className="flex flex-col text-left">
-                  <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">Rising Star Badge</h2>
+                  <h2 className="text-xl font-black text-slate-900 tracking-tight leading-none mb-1">Growing Employee Badge</h2>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">CURRENT LEVEL</p>
                 </div>
               </div>
@@ -2432,8 +2824,8 @@ const App: React.FC = () => {
                     <Trophy size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm font-black text-slate-900">Star Performer</p>
-                    <p className="text-[10px] font-bold text-slate-500">Reach 3 approved goals in a cycle</p>
+                    <p className="text-sm font-black text-slate-900">Best Employee</p>
+                    <p className="text-[10px] font-bold text-slate-500">If your avg score is between 8.5 to 10</p>
                   </div>
                 </div>
               </div>
@@ -2463,8 +2855,7 @@ const App: React.FC = () => {
             <div className="px-8 pb-8 space-y-6 text-left">
               <p className="text-sm font-medium text-slate-600 leading-relaxed">Your streak counts how many months in a row you've submitted goals on time. Keep it going to earn recognition and stay on track.</p>
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Next milestone</p>
-                <p className="text-sm font-black text-slate-900">3 Months — Unlock streak badge</p>
+                <p className="text-sm font-medium text-slate-600 leading-relaxed">Submit goals on time and maintain streak. Every month you get 1 point.</p>
               </div>
             </div>
           </div>
