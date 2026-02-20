@@ -657,6 +657,7 @@ const App: React.FC = () => {
   const [isBadgeInfoModalOpen, setIsBadgeInfoModalOpen] = useState(false);
   const [isStreakInfoModalOpen, setIsStreakInfoModalOpen] = useState(false);
   const [isReviewSummaryExpanded, setIsReviewSummaryExpanded] = useState(true);
+  const [isSoftSkillsExpanded, setIsSoftSkillsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [roadmapStartIndex, setRoadmapStartIndex] = useState(0);
@@ -1477,54 +1478,47 @@ const App: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Soft Skills Section (Cards) */}
+                      {/* Soft Skills Section (Accordion + compact) */}
                       <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm mt-8">
-                        <div className="bg-[#fafbff] p-8 border-b border-slate-100 flex items-center justify-between">
+                        <div
+                          onClick={() => setIsSoftSkillsExpanded(!isSoftSkillsExpanded)}
+                          className="bg-[#fafbff] px-5 py-4 flex items-center justify-between cursor-pointer group hover:bg-[#f4f6ff] transition-colors border-b border-slate-100"
+                        >
                           <div className="flex items-center gap-2">
                             <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-wider leading-none">SOFT SKILLS & COMPETENCIES ({memberReportMonth.toUpperCase()})</h2>
                             <Info size={14} className="text-slate-300" />
                           </div>
+                          <ChevronDown size={18} className={`text-slate-400 group-hover:text-slate-600 transition-transform ${isSoftSkillsExpanded ? '' : '-rotate-90'}`} />
                         </div>
 
-                        <div className="p-8">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {softSkillsData.map((skill, idx) => (
-                              <div key={skill.id} className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all group text-left">
-                                <div className="flex items-center justify-between mb-6">
-                                   <div className="flex items-center gap-3">
-                                      <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-[11px] font-black text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                         0{idx + 1}
+                        {isSoftSkillsExpanded && (
+                          <div className="p-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              {softSkillsData.map((skill, idx) => (
+                                <div key={skill.id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all group text-left">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                        0{idx + 1}
                                       </div>
-                                      <h3 className="text-xs font-black text-slate-800">{skill.name}</h3>
-                                   </div>
-                                </div>
-
-                                <div className="space-y-6">
-                                   {/* Employee Rating: read-only in manager view */}
-                                   <div className="opacity-60 pointer-events-none">
-                                      <div className="flex justify-between items-center mb-2">
-                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Employee Rating</span>
-                                         <span className={`text-[10px] font-black ${skill.employeeRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.employeeRating}/10</span>
+                                      <h3 className="text-[11px] font-black text-slate-800">{skill.name}</h3>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-3">
+                                    <div className="opacity-60 pointer-events-none">
+                                      <div className="flex justify-between items-center mb-1">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Employee Rating</span>
+                                        <span className={`text-[9px] font-black ${skill.employeeRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.employeeRating}/10</span>
                                       </div>
-                                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
-                                         <div 
-                                            className={`h-full transition-all duration-700 ${skill.employeeRating === 0 ? 'bg-slate-200' : skill.employeeRating <= 3 ? 'bg-red-500' : 'bg-blue-500'}`}
-                                            style={{ width: `${skill.employeeRating * 10}%` }}
-                                         />
-                                         {skill.employeeRating > 0 && (
-                                            <div 
-                                               className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white border-2 border-slate-200 rounded-full shadow-sm"
-                                               style={{ left: `calc(${skill.employeeRating * 10}% - 5px)` }}
-                                            />
-                                         )}
+                                      <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden relative">
+                                        <div className={`h-full transition-all duration-700 ${skill.employeeRating === 0 ? 'bg-slate-200' : skill.employeeRating <= 3 ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${skill.employeeRating * 10}%` }} />
+                                        {skill.employeeRating > 0 && <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border-2 border-slate-200 rounded-full shadow-sm" style={{ left: `calc(${skill.employeeRating * 10}% - 4px)` }} />}
                                       </div>
-                                   </div>
-
-                                   {/* Manager Rating: editable in manager view */}
-                                   <div>
-                                      <div className="flex justify-between items-center mb-2">
-                                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Manager Rating</span>
-                                         <span className={`text-[10px] font-black ${skill.managerRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.managerRating}/10</span>
+                                    </div>
+                                    <div>
+                                      <div className="flex justify-between items-center mb-1">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Manager Rating</span>
+                                        <span className={`text-[9px] font-black ${skill.managerRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.managerRating}/10</span>
                                       </div>
                                       <input
                                         type="range"
@@ -1532,14 +1526,15 @@ const App: React.FC = () => {
                                         max={10}
                                         value={skill.managerRating}
                                         onChange={(e) => handleSoftSkillRating(skill.id, 'manager', parseInt(e.target.value, 10))}
-                                        className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-emerald-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-200 [&::-webkit-slider-thumb]:shadow-sm"
+                                        className="w-full h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-emerald-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-200 [&::-webkit-slider-thumb]:shadow-sm"
                                       />
-                                   </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* Review Summary Section */}
@@ -2514,32 +2509,35 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded-[2.5rem] overflow-hidden shadow-sm mt-8">
-                      <div className="bg-[#fafbff] p-8 border-b border-slate-100 flex items-center justify-between">
+                      <div
+                        onClick={() => setIsSoftSkillsExpanded(!isSoftSkillsExpanded)}
+                        className="bg-[#fafbff] px-5 py-4 flex items-center justify-between cursor-pointer group hover:bg-[#f4f6ff] transition-colors border-b border-slate-100"
+                      >
                         <div className="flex items-center gap-2">
                           <h2 className="text-[14px] font-black text-slate-900 uppercase tracking-wider leading-none">SOFT SKILLS & COMPETENCIES</h2>
                           <Info size={14} className="text-slate-300" />
                         </div>
+                        <ChevronDown size={18} className={`text-slate-400 group-hover:text-slate-600 transition-transform ${isSoftSkillsExpanded ? '' : '-rotate-90'}`} />
                       </div>
 
-                      <div className="p-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {softSkillsData.map((skill, idx) => (
-                            <div key={skill.id} className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all group text-left">
-                              <div className="flex items-center justify-between mb-6">
-                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-[11px] font-black text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                       0{idx + 1}
+                      {isSoftSkillsExpanded && (
+                        <div className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {softSkillsData.map((skill, idx) => (
+                              <div key={skill.id} className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all group text-left">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-7 h-7 rounded-lg bg-slate-50 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                      0{idx + 1}
                                     </div>
-                                    <h3 className="text-xs font-black text-slate-800">{skill.name}</h3>
-                                 </div>
-                              </div>
-
-                              <div className="space-y-6">
-                                 {/* Employee Rating: editable in employee view */}
-                                 <div>
-                                    <div className="flex justify-between items-center mb-2">
-                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Employee Rating</span>
-                                       <span className={`text-[10px] font-black ${skill.employeeRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.employeeRating}/10</span>
+                                    <h3 className="text-[11px] font-black text-slate-800">{skill.name}</h3>
+                                  </div>
+                                </div>
+                                <div className="space-y-3">
+                                  <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Employee Rating</span>
+                                      <span className={`text-[9px] font-black ${skill.employeeRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.employeeRating}/10</span>
                                     </div>
                                     <input
                                       type="range"
@@ -2547,34 +2545,25 @@ const App: React.FC = () => {
                                       max={10}
                                       value={skill.employeeRating}
                                       onChange={(e) => handleSoftSkillRating(skill.id, 'employee', parseInt(e.target.value, 10))}
-                                      className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-200 [&::-webkit-slider-thumb]:shadow-sm"
+                                      className="w-full h-1 bg-slate-100 rounded-full appearance-none cursor-pointer accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-200 [&::-webkit-slider-thumb]:shadow-sm"
                                     />
-                                 </div>
-
-                                 {/* Manager Rating: read-only in employee view */}
-                                 <div className="opacity-60 pointer-events-none">
-                                    <div className="flex justify-between items-center mb-2">
-                                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Manager Rating</span>
-                                       <span className={`text-[10px] font-black ${skill.managerRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.managerRating}/10</span>
+                                  </div>
+                                  <div className="opacity-60 pointer-events-none">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Manager Rating</span>
+                                      <span className={`text-[9px] font-black ${skill.managerRating > 0 ? 'text-slate-900' : 'text-slate-300'}`}>{skill.managerRating}/10</span>
                                     </div>
-                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden relative">
-                                       <div 
-                                          className={`h-full transition-all duration-700 ${skill.managerRating === 0 ? 'bg-slate-200' : skill.managerRating <= 3 ? 'bg-emerald-500' : 'bg-emerald-500'}`}
-                                          style={{ width: `${skill.managerRating * 10}%` }}
-                                       />
-                                       {skill.managerRating > 0 && (
-                                          <div 
-                                             className="absolute top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white border-2 border-slate-200 rounded-full shadow-sm"
-                                             style={{ left: `calc(${skill.managerRating * 10}% - 5px)` }}
-                                          />
-                                       )}
+                                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden relative">
+                                      <div className={`h-full transition-all duration-700 ${skill.managerRating === 0 ? 'bg-slate-200' : 'bg-emerald-500'}`} style={{ width: `${skill.managerRating * 10}%` }} />
+                                      {skill.managerRating > 0 && <div className="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white border-2 border-slate-200 rounded-full shadow-sm" style={{ left: `calc(${skill.managerRating * 10}% - 4px)` }} />}
                                     </div>
-                                 </div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm animate-in fade-in slide-in-from-top-2 duration-300 delay-200 mt-6">
